@@ -108,10 +108,11 @@ export default function JudgeManagement() {
         {
             key: 'actions',
             header: 'Actions',
-            render: (_, judge) => (
+            render: (judge) => (
                 <button
-                    onClick={() => handleDeleteClick(judge)}
-                    className="text-red-500 hover:text-red-700 hover:bg-red-50 p-2 rounded-md transition-colors"
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); handleDeleteClick(judge); }}
+                    className="text-red-500 hover:text-red-700 hover:bg-red-50 p-2 rounded-md transition-colors inline-flex items-center justify-center"
                     title="Delete Judge"
                 >
                     <Trash2 size={18} />
@@ -134,7 +135,7 @@ export default function JudgeManagement() {
                 </button>
             </div>
 
-            <Table columns={columns} data={judges} />
+            <Table columns={columns} data={judges} keyField="_id" />
 
             {/* Register Judge Modal */}
             <Modal
@@ -195,12 +196,12 @@ export default function JudgeManagement() {
                                     <span className="font-mono">{generatedCreds.username}</span>
                                 </div>
                                 <div>
-                                    <span className="block text-gray-500 text-xs">Temp Password</span>
-                                    <span className="font-mono">{generatedCreds.password}</span>
+                                    <span className="block text-gray-500 text-xs">Initial Password</span>
+                                    <span className="font-mono text-gray-600">Same as username</span>
                                 </div>
                             </div>
                         ) : (
-                            <p className="text-xs text-gray-400 italic">Click generate to create login details.</p>
+                            <p className="text-xs text-gray-400 italic">Click generate to create username (password = username until first login).</p>
                         )}
                     </div>
 
@@ -270,9 +271,10 @@ export default function JudgeManagement() {
                                 <span className="font-bold select-all">{successCreds?.username}</span>
                             </div>
                             <div className="flex justify-between">
-                                <span className="text-gray-500">Password:</span>
+                                <span className="text-gray-500">Password (initial):</span>
                                 <span className="font-bold select-all">{successCreds?.password}</span>
                             </div>
+                            <p className="text-xs text-gray-500 mt-2">They must change password on first login.</p>
                         </div>
                     </div>
                     <button

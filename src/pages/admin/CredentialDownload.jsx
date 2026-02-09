@@ -1,10 +1,16 @@
 import React, { useEffect, useState } from 'react';
-// We'll reuse logic from management pages or fetch simple data
 import { teamApi } from '../../api/teamApi';
 import { judgeApi } from '../../api/judgeApi';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import Table from '../../components/common/Table';
 import { Download, FileText } from 'lucide-react';
+
+function escapeHtml(text) {
+    if (text == null) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
 
 export default function CredentialDownload() {
     const [teams, setTeams] = useState([]);
@@ -21,6 +27,73 @@ export default function CredentialDownload() {
         fetchAll();
     }, []);
 
+    const handleExportPDF = (type) => {
+        const data = type === 'TEAMS' ? teams : judges;
+        if (!data.length) return alert('No data to export');
+
+        const title = type === 'TEAMS'
+            ? 'Team Credentials (initial password = username)'
+            : 'Judge Credentials (initial password = username)';
+        const headers = type === 'TEAMS'
+            ? ['Team Name', 'Leader', 'Theme', 'Username', 'Password']
+            : ['Name', 'Theme', 'Username', 'Password'];
+
+        const rows = type === 'TEAMS'
+            ? data.map(team => [
+                team.name || '',
+                team.leaderName || '',
+                team.themeId?.name || 'N/A',
+                team.leaderId?.username || 'N/A',
+                team.leaderId?.username || 'N/A'
+            ])
+            : data.map(judge => [
+                judge.name || '',
+                judge.assignedTheme?.name || 'N/A',
+                judge.username || 'N/A',
+                judge.username || 'N/A'
+            ]);
+
+        const headerRow = headers.map(h => `<th>${escapeHtml(h)}</th>`).join('');
+        const bodyRows = rows.map(row =>
+            '<tr>' + row.map(cell => `<td>${escapeHtml(cell)}</td>`).join('') + '</tr>'
+        ).join('');
+
+        const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>${escapeHtml(title)}</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    h1 { font-size: 18px; margin-bottom: 16px; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #333; padding: 8px; text-align: left; }
+    th { background: #f0f0f0; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h1>${escapeHtml(title)}</h1>
+  <table>
+    <thead><tr>${headerRow}</tr></thead>
+    <tbody>${bodyRows}</tbody>
+  </table>
+</body>
+</html>`;
+
+        const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const w = window.open(url, '_blank', 'noopener');
+        if (w) {
+            w.onload = () => {
+                URL.revokeObjectURL(url);
+                w.print();
+            };
+        } else {
+            URL.revokeObjectURL(url);
+            alert('Allow popups to print/save as PDF.');
+        }
+    };
+
     const handleExport = (type) => {
         const data = type === 'TEAMS' ? teams : judges;
         if (!data.length) return alert('No data to export');
@@ -29,7 +102,7 @@ export default function CredentialDownload() {
 
         if (type === 'TEAMS') {
             // Headers
-            csvContent += "Team ID,Team Name,Theme,Username,Password Status\n";
+            csvContent += "Team ID,Team Name,Theme,Username,Password\n";
             // Rows
             csvContent += data.map(team => {
                 const id = team._id;
@@ -37,19 +110,19 @@ export default function CredentialDownload() {
                 const name = `"${(team.name || '').replace(/"/g, '""')}"`;
                 const theme = `"${(team.themeId?.name || 'N/A').replace(/"/g, '""')}"`;
                 const username = team.leaderId?.username || 'N/A';
-                const password = "Saved at creation (Hash protected)";
+                const password = username; // Initial password = username
                 return `${id},${name},${theme},${username},${password}`;
             }).join("\n");
         } else {
             // Headers for Judges
-            csvContent += "Judge ID,Name,Assigned Theme,Username,Password Status\n";
+            csvContent += "Judge ID,Name,Assigned Theme,Username,Password\n";
             // Rows
             csvContent += data.map(judge => {
                 const id = judge._id;
                 const name = `"${(judge.name || '').replace(/"/g, '""')}"`;
                 const theme = `"${(judge.assignedTheme?.name || 'N/A').replace(/"/g, '""')}"`;
                 const username = judge.username || 'N/A';
-                const password = "Saved at creation (Hash protected)";
+                const password = username; // Initial password = username
                 return `${id},${name},${theme},${username},${password}`;
             }).join("\n");
         }
@@ -83,7 +156,10 @@ export default function CredentialDownload() {
                         >
                             <Download className="mr-1 h-3 w-3" /> CSV
                         </button>
-                        <button className="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50">
+                        <button
+                            onClick={() => handleExportPDF('TEAMS')}
+                            className="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50"
+                        >
                             <FileText className="mr-1 h-3 w-3" /> PDF
                         </button>
                     </div>
@@ -124,7 +200,10 @@ export default function CredentialDownload() {
                         >
                             <Download className="mr-1 h-3 w-3" /> CSV
                         </button>
-                        <button className="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50">
+                        <button
+                            onClick={() => handleExportPDF('JUDGES')}
+                            className="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50"
+                        >
                             <FileText className="mr-1 h-3 w-3" /> PDF
                         </button>
                     </div>

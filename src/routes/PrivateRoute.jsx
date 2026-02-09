@@ -20,6 +20,14 @@ export default function PrivateRoute({ children, allowedRoles }) {
         return <Navigate to="/login" state={{ from: location }} replace />;
     }
 
+    // First login: must change password before accessing any protected page
+    if (user?.isFirstLogin) {
+        const isChangePasswordPage = location.pathname === '/change-password';
+        if (!isChangePasswordPage) {
+            return <Navigate to="/change-password" replace />;
+        }
+    }
+
     if (allowedRoles && !allowedRoles.includes(user.role)) {
         return <Navigate to="/access-denied" replace />;
     }

@@ -12,7 +12,7 @@ const userSchema = new mongoose.Schema({
     password: {
         type: String,
         required: [true, 'Password is required'],
-        minlength: 6
+        minlength: 1 // Initial password = username (may be short); after first login user sets longer password
     },
     role: {
         type: String,

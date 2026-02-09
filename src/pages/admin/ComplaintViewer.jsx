@@ -25,14 +25,30 @@ export default function ComplaintViewer() {
     }, []);
 
     const columns = [
-        { key: 'teamName', header: 'Team' },
-        { key: 'theme', header: 'Theme' },
-        { key: 'type', header: 'Issue Type' },
-        { key: 'description', header: 'Description', render: (row) => <span className="text-gray-600 block max-w-xs">{row.description}</span> },
         {
-            key: 'timestamp',
+            key: 'team',
+            header: 'Team',
+            render: (row) => row.teamId?.name || row.teamId?.leaderName || '—'
+        },
+        { key: 'type', header: 'Issue Type' },
+        {
+            key: 'description',
+            header: 'Description',
+            render: (row) => <span className="text-gray-600 block max-w-md">{row.description || '—'}</span>
+        },
+        {
+            key: 'status',
+            header: 'Status',
+            render: (row) => (
+                <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${row.status === 'RESOLVED' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                    {row.status || 'PENDING'}
+                </span>
+            )
+        },
+        {
+            key: 'createdAt',
             header: 'Time',
-            render: (row) => format(new Date(row.timestamp), 'h:mm a')
+            render: (row) => (row.createdAt ? format(new Date(row.createdAt), 'MMM d, h:mm a') : '—')
         }
     ];
 
@@ -49,7 +65,7 @@ export default function ComplaintViewer() {
                     <p className="mt-1 text-sm text-gray-500">Everything seems to be running smoothly!</p>
                 </div>
             ) : (
-                <Table columns={columns} data={complaints} />
+                <Table columns={columns} data={complaints} keyField="_id" />
             )}
         </div>
     );

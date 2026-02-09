@@ -76,7 +76,11 @@ export default function JudgeLayout() {
                 <div className="flex flex-shrink-0 border-t border-gray-200 p-4">
                     <div className="mb-4">
                         <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Assigned Theme</p>
-                        <p className="text-sm font-medium text-gray-900 truncate">{user?.assignedTheme || 'Round 1 Assignments'}</p>
+                        <p className="text-sm font-medium text-gray-900 truncate">
+                        {typeof user?.assignedTheme === 'object' && user?.assignedTheme?.name
+                            ? user.assignedTheme.name
+                            : (user?.assignedTheme || '—')}
+                    </p>
                     </div>
                     <button
                         onClick={handleLogout}

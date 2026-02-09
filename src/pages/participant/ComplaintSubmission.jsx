@@ -4,6 +4,14 @@ import { complaintApi } from '../../api/complaintApi';
 import { AlertTriangle, Send, ArrowLeft } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 
+const TYPE_TO_ENUM = {
+    'Technical Issue': 'TECHNICAL',
+    'Evaluation Issue': 'EVALUATION',
+    'Timeline Issue': 'OTHER',
+    'Facility / Wifi': 'OTHER',
+    'Other': 'OTHER'
+};
+
 export default function ComplaintSubmission() {
     const { user } = useAuth();
     const navigate = useNavigate();
@@ -15,16 +23,13 @@ export default function ComplaintSubmission() {
         setSubmitting(true);
         try {
             await complaintApi.create({
-                teamId: user.teamId,
-                teamName: user.teamName,
-                theme: user.theme,
-                type: formData.type,
+                type: TYPE_TO_ENUM[formData.type] || 'OTHER',
                 description: formData.description
             });
             alert('Complaint submitted successfully. Admin has been notified.');
             navigate('/participant/dashboard');
         } catch (err) {
-            alert('Failed to submit complaint');
+            alert('Failed to submit complaint: ' + (err.message || 'Unknown error'));
         } finally {
             setSubmitting(false);
         }

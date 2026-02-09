@@ -17,7 +17,7 @@ export const submitEvaluation = async (req, res) => {
         }
 
         // Verify judge can only evaluate teams in their assigned theme
-        const team = await Team.findById(teamId);
+        const team = await Team.findById(teamId).lean();
         if (!team) {
             return res.status(404).json({
                 success: false,
@@ -25,8 +25,10 @@ export const submitEvaluation = async (req, res) => {
             });
         }
 
-        // Check if judge's theme matches team's theme
-        if (req.user.assignedTheme.toString() !== team.themeId.toString()) {
+        // Compare theme IDs (team.themeId is ObjectId; req.user.assignedTheme is ObjectId)
+        const teamThemeId = String(team.themeId?._id || team.themeId);
+        const judgeThemeId = String(req.user.assignedTheme?._id || req.user.assignedTheme);
+        if (teamThemeId !== judgeThemeId) {
             return res.status(403).json({
                 success: false,
                 message: 'You can only evaluate teams in your assigned theme'
@@ -88,6 +90,37 @@ export const getJudgeEvaluations = async (req, res) => {
     }
 };
 
+// @desc    Get my team's evaluation status (which rounds have been evaluated)
+// @route   GET /api/evaluations/my-team
+// @access  Private (Participant only)
+export const getMyTeamEvaluationStatus = async (req, res) => {
+    try {
+        const teamId = req.user.teamId;
+        if (!teamId) {
+            return res.status(400).json({
+                success: false,
+                message: 'No team assigned'
+            });
+        }
+        const evaluations = await Evaluation.find({ teamId }).select('round').lean();
+        const rounds = [1, 2, 3];
+        const status = {};
+        rounds.forEach(r => {
+            status[`round${r}Completed`] = evaluations.some(e => e.round === r);
+        });
+        res.json({
+            success: true,
+            data: status
+        });
+    } catch (error) {
+        console.error('Get my team evaluation status error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error'
+        });
+    }
+};
+
 // @desc    Get evaluations by team
 // @route   GET /api/evaluations/team/:teamId
 // @access  Private (Admin only)
@@ -138,24 +171,20 @@ export const getAllEvaluations = async (req, res) => {
 // @access  Private (Admin only)
 export const getLeaderboard = async (req, res) => {
     try {
-        // Get all teams
         const teams = await Team.find().populate('themeId', 'name');
+        const evaluations = await Evaluation.find().select('teamId round score').lean();
 
-        // Get all evaluations
-        const evaluations = await Evaluation.find();
-
-        // Calculate scores per team
         const leaderboard = teams.map(team => {
-            const teamEvals = evaluations.filter(
-                e => e.teamId.toString() === team._id.toString()
-            );
+            const teamIdStr = team._id.toString();
+            const teamEvals = evaluations.filter(e => {
+                const eid = e.teamId?._id || e.teamId;
+                return eid && String(eid) === teamIdStr;
+            });
 
-            // Group by round
             const r1Evals = teamEvals.filter(e => e.round === 1);
             const r2Evals = teamEvals.filter(e => e.round === 2);
             const r3Evals = teamEvals.filter(e => e.round === 3);
 
-            // Calculate averages
             const r1Avg = r1Evals.length > 0
                 ? r1Evals.reduce((sum, e) => sum + e.score, 0) / r1Evals.length
                 : 0;
@@ -166,7 +195,11 @@ export const getLeaderboard = async (req, res) => {
                 ? r3Evals.reduce((sum, e) => sum + e.score, 0) / r3Evals.length
                 : 0;
 
-            const totalScore = r1Avg + r2Avg + r3Avg;
+            // Overall score = average of the three round averages (for ranking)
+            const roundsWithScores = [r1Avg, r2Avg, r3Avg].filter(v => v > 0).length;
+            const overallAvg = roundsWithScores > 0
+                ? (r1Avg + r2Avg + r3Avg) / 3
+                : 0;
 
             return {
                 teamId: team._id,
@@ -175,15 +208,15 @@ export const getLeaderboard = async (req, res) => {
                 r1Avg: parseFloat(r1Avg.toFixed(2)),
                 r2Avg: parseFloat(r2Avg.toFixed(2)),
                 r3Avg: parseFloat(r3Avg.toFixed(2)),
-                totalScore: parseFloat(totalScore.toFixed(2)),
+                overallAvg: parseFloat(overallAvg.toFixed(2)),
                 r1Count: r1Evals.length,
                 r2Count: r2Evals.length,
                 r3Count: r3Evals.length
             };
         });
 
-        // Sort by total score descending
-        leaderboard.sort((a, b) => b.totalScore - a.totalScore);
+        // Sort by overall average descending
+        leaderboard.sort((a, b) => b.overallAvg - a.overallAvg);
 
         res.json({
             success: true,

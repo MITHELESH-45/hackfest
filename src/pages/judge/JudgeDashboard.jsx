@@ -3,27 +3,37 @@ import { useAuth } from '../../context/AuthContext';
 import { useHackathon } from '../../context/HackathonContext';
 import { useEvaluation } from '../../context/EvaluationContext';
 import VerticalTimeline from '../../components/timeline/VerticalTimeline';
-import { Users, CheckCircle, Clock } from 'lucide-react';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
+import { CheckCircle, Clock } from 'lucide-react';
 
 export default function JudgeDashboard() {
     const { user } = useAuth();
-    const { hackathon, activeSlot } = useHackathon();
-    // We'd filter evaluations for this judge for stats
+    const { hackathon, loading: hackathonLoading } = useHackathon();
     const { evaluations } = useEvaluation();
 
-    const myEvaluationsCount = evaluations.filter(e => e.judgeId === user.username && e.round === hackathon.currentRound).length;
+    const currentRound = hackathon?.currentRound ?? 1;
+    const judgeIdStr = String(user?._id || user?.id || '');
+    const myEvaluationsCount = (evaluations || []).filter(
+        e => String(e.judgeId?._id || e.judgeId) === judgeIdStr && Number(e.round) === Number(currentRound)
+    ).length;
+
+    if (hackathonLoading) {
+        return <LoadingSpinner />;
+    }
 
     return (
         <div className="space-y-6">
             <div>
                 <h1 className="text-2xl font-bold text-gray-900">Judge Dashboard</h1>
-                <p className="text-gray-500">Welcome, {user.name}</p>
+                <p className="text-gray-500">Welcome, {user?.name ?? 'Judge'}</p>
             </div>
 
             <div className="bg-white shadow rounded-lg p-6 border-l-4 border-secondary">
                 <h3 className="text-lg font-medium text-gray-900">Assigned Theme</h3>
                 <p className="mt-1 text-2xl font-bold text-secondary">
-                    {user.assignedTheme || 'General / Final Round'}
+                    {typeof user?.assignedTheme === 'object' && user.assignedTheme?.name
+                        ? user.assignedTheme.name
+                        : (user?.assignedTheme || 'General / Final Round')}
                 </p>
                 <p className="text-sm text-gray-500 mt-2">
                     You will only see teams from this theme during Round 1 & 2.
@@ -37,7 +47,7 @@ export default function JudgeDashboard() {
                     </div>
                     <div>
                         <div className="text-sm font-medium text-gray-500">Current Round</div>
-                        <div className="text-xl font-bold text-gray-900">Round {hackathon.currentRound}</div>
+                        <div className="text-xl font-bold text-gray-900">Round {currentRound}</div>
                     </div>
                 </div>
                 <div className="bg-white p-6 shadow rounded-lg flex items-center">
@@ -45,7 +55,7 @@ export default function JudgeDashboard() {
                         <CheckCircle className="h-6 w-6" />
                     </div>
                     <div>
-                        <div className="text-sm font-medium text-gray-500">Evaluated Today</div>
+                        <div className="text-sm font-medium text-gray-500">Evaluated This Round</div>
                         <div className="text-xl font-bold text-gray-900">{myEvaluationsCount} Teams</div>
                     </div>
                 </div>

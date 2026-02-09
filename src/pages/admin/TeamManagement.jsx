@@ -5,13 +5,15 @@ import { generateCredential } from '../../utils/credentialGenerator';
 import Table from '../../components/common/Table';
 import Modal from '../../components/common/Modal';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
-import { Plus, UserPlus } from 'lucide-react';
+import { Plus, UserPlus, Trash2 } from 'lucide-react';
 
 export default function TeamManagement() {
     const [teams, setTeams] = useState([]);
     const [themes, setThemes] = useState([]);
     const [loading, setLoading] = useState(true);
     const [modalOpen, setModalOpen] = useState(false);
+    const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+    const [teamToDelete, setTeamToDelete] = useState(null);
 
     // Success Modal State
     const [successModalOpen, setSuccessModalOpen] = useState(false);
@@ -72,6 +74,24 @@ export default function TeamManagement() {
         }
     };
 
+    const handleDeleteClick = (team) => {
+        setTeamToDelete(team);
+        setDeleteConfirmOpen(true);
+    };
+
+    const handleDeleteConfirm = async () => {
+        if (!teamToDelete) return;
+        try {
+            await teamApi.delete(teamToDelete._id);
+            const data = await teamApi.getAll();
+            setTeams(data);
+            setDeleteConfirmOpen(false);
+            setTeamToDelete(null);
+        } catch (err) {
+            alert('Failed to delete team: ' + (err.message || 'Unknown error'));
+        }
+    };
+
     const columns = [
         { key: 'name', header: 'Team Name' },
         { key: 'leaderName', header: 'Team Leader' },
@@ -80,7 +100,21 @@ export default function TeamManagement() {
             header: 'Theme',
             render: (row) => row.themeId?.name || 'N/A'
         },
-        { key: 'username', header: 'Username', render: (row) => row.leaderId?.username || 'N/A' }
+        { key: 'username', header: 'Username', render: (row) => row.leaderId?.username || 'N/A' },
+        {
+            key: 'actions',
+            header: 'Actions',
+            render: (row) => (
+                <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); handleDeleteClick(row); }}
+                    className="text-red-500 hover:text-red-700 hover:bg-red-50 p-2 rounded-md transition-colors inline-flex items-center justify-center"
+                    title="Delete Team"
+                >
+                    <Trash2 size={18} />
+                </button>
+            )
+        }
     ];
     // Note: mockTeams.js doesn't store username directly in MOCK_TEAMS usually, 
     // but for admin display purposes we might want to attach it in the API response or store it.
@@ -103,7 +137,7 @@ export default function TeamManagement() {
                 </button>
             </div>
 
-            <Table columns={columns} data={teams} />
+            <Table columns={columns} data={teams} keyField="_id" />
 
             <Modal
                 isOpen={modalOpen}
@@ -164,12 +198,12 @@ export default function TeamManagement() {
                                     <span className="font-mono">{generatedCreds.username}</span>
                                 </div>
                                 <div>
-                                    <span className="block text-gray-500 text-xs">Temp Password</span>
-                                    <span className="font-mono">{generatedCreds.password}</span>
+                                    <span className="block text-gray-500 text-xs">Initial Password</span>
+                                    <span className="font-mono text-gray-600">Same as username</span>
                                 </div>
                             </div>
                         ) : (
-                            <p className="text-xs text-gray-400 italic">Click generate to create login details.</p>
+                            <p className="text-xs text-gray-400 italic">Click generate to create username (password = username until first login).</p>
                         )}
                     </div>
 
@@ -202,9 +236,10 @@ export default function TeamManagement() {
                                 <span className="font-bold select-all">{successCreds?.username}</span>
                             </div>
                             <div className="flex justify-between">
-                                <span className="text-gray-500">Password:</span>
+                                <span className="text-gray-500">Password (initial):</span>
                                 <span className="font-bold select-all">{successCreds?.password}</span>
                             </div>
+                            <p className="text-xs text-gray-500 mt-2">They must change password on first login.</p>
                         </div>
                     </div>
                     <button
@@ -213,6 +248,35 @@ export default function TeamManagement() {
                     >
                         Close
                     </button>
+                </div>
+            </Modal>
+
+            {/* Delete Team Confirmation Modal */}
+            <Modal
+                isOpen={deleteConfirmOpen}
+                onClose={() => { setDeleteConfirmOpen(false); setTeamToDelete(null); }}
+                title="Delete Team"
+            >
+                <div className="space-y-4">
+                    <p className="text-gray-600">
+                        Are you sure you want to delete <strong>{teamToDelete?.name}</strong>? This will remove the team and the team leader&apos;s login account.
+                    </p>
+                    <div className="flex gap-3 mt-6">
+                        <button
+                            type="button"
+                            onClick={() => { setDeleteConfirmOpen(false); setTeamToDelete(null); }}
+                            className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="button"
+                            onClick={handleDeleteConfirm}
+                            className="flex-1 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+                        >
+                            Delete Team
+                        </button>
+                    </div>
                 </div>
             </Modal>
         </div >

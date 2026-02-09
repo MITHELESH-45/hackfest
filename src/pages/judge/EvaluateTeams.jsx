@@ -10,7 +10,7 @@ import { CheckCircle, Clock, Star, Lock } from 'lucide-react';
 
 export default function EvaluateTeams() {
     const { user } = useAuth();
-    const { hackathon, activeSlot } = useHackathon();
+    const { hackathon, activeSlot, loading: hackathonLoading } = useHackathon();
     const { evaluations, refreshData: refreshContext } = useEvaluation();
 
     const [teams, setTeams] = useState([]);
@@ -22,27 +22,26 @@ export default function EvaluateTeams() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
 
-    useEffect(() => {
-        fetchTeams();
-    }, [hackathon.currentRound, user]);
+    const currentRound = hackathon?.currentRound ?? 1;
+    const themeId = typeof user?.assignedTheme === 'object' ? user?.assignedTheme?._id : user?.assignedTheme;
+    const roundKey = currentRound ? `round${currentRound}` : null;
 
     const fetchTeams = async () => {
+        if (!hackathon) return;
         setLoading(true);
         try {
             const allTeams = await teamApi.getAll();
-
-            // Filter logic
             let filtered = [];
-            if (hackathon.currentRound < 3) {
-                // R1 & R2: Filter by theme and readiness
-                filtered = allTeams.filter(t =>
-                    t.theme === user.assignedTheme &&
-                    t.isReady[hackathon.currentRound]
+            if (themeId) {
+                const themeTeams = allTeams.filter(t =>
+                    String(t.themeId?._id || t.themeId) === String(themeId)
                 );
-            } else {
-                // Final Round: Mock auto-assignment (Take top 10 or just first 10 for mock)
-                // And ensure it's NOT the judge's own theme (if applicable)
-                filtered = allTeams.slice(0, 10).filter(t => t.theme !== user.assignedTheme);
+                if (currentRound < 3 && roundKey) {
+                    filtered = themeTeams.filter(t => t.readiness?.[roundKey] === true);
+                } else {
+                    // Round 3 (Final): show only teams from judge's assigned theme
+                    filtered = themeTeams;
+                }
             }
             setTeams(filtered);
         } catch (err) {
@@ -52,16 +51,23 @@ export default function EvaluateTeams() {
         }
     };
 
+    useEffect(() => {
+        if (!hackathon) return;
+        fetchTeams();
+    }, [hackathon?.currentRound, user?.id, themeId]);
+
     const hasEvaluated = (teamId) => {
-        return evaluations.some(e =>
-            e.teamId === teamId &&
-            e.judgeId === user.username &&
-            e.round === hackathon.currentRound
+        const tid = String(teamId);
+        const judgeId = String(user?._id || user?.id || '');
+        return (evaluations || []).some(e =>
+            String(e.teamId?._id || e.teamId) === tid &&
+            String(e.judgeId?._id || e.judgeId) === judgeId &&
+            Number(e.round) === Number(currentRound)
         );
     };
 
     const handleEvaluateClick = (team) => {
-        if (hasEvaluated(team.id)) return;
+        if (hasEvaluated(team._id)) return;
         setSelectedTeam(team);
         setScore('');
         setIsModalOpen(true);
@@ -78,9 +84,9 @@ export default function EvaluateTeams() {
         setIsSubmitting(true);
         try {
             await evaluationApi.submitScore({
-                teamId: selectedTeam.id,
-                judgeId: user.username,
-                round: hackathon.currentRound,
+                teamId: selectedTeam._id,
+                judgeId: user?.username,
+                round: currentRound,
                 score: scoreVal
             });
             setIsModalOpen(false);
@@ -93,16 +99,17 @@ export default function EvaluateTeams() {
         }
     };
 
+    if (hackathonLoading || !hackathon) return <LoadingSpinner />;
     if (loading) return <LoadingSpinner />;
 
-    // Check if evaluation is allowed currently (based on active timeline slot)
     const isEvaluationTime = activeSlot?.type === 'EVALUATION' || activeSlot?.type === 'FINAL';
+    const themeName = typeof user?.assignedTheme === 'object' ? user?.assignedTheme?.name : user?.assignedTheme;
 
     return (
         <div>
             <div className="mb-6">
                 <h1 className="text-2xl font-bold text-gray-900">
-                    Evaluate Teams (Round {hackathon.currentRound})
+                    Evaluate Teams (Round {currentRound})
                 </h1>
                 {!isEvaluationTime && (
                     <div className="mt-2 bg-yellow-50 border-l-4 border-yellow-400 p-4">
@@ -126,23 +133,22 @@ export default function EvaluateTeams() {
                     <Clock className="mx-auto h-12 w-12 text-gray-400" />
                     <h3 className="mt-2 text-sm font-medium text-gray-900">No teams ready</h3>
                     <p className="mt-1 text-sm text-gray-500">
-                        Wait for teams in your theme ({user.assignedTheme}) to mark themselves as ready.
+                        Wait for teams in your theme ({themeName ?? '—'}) to mark themselves as ready.
                     </p>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {teams.map(team => {
-                        const evaluated = hasEvaluated(team.id);
+                        const evaluated = hasEvaluated(team._id);
                         return (
                             <div
-                                key={team.id}
+                                key={team._id}
                                 className={`bg-white shadow rounded-lg p-6 border-l-4 ${evaluated ? 'border-green-500' : 'border-blue-500'} relative`}
                             >
                                 <div className="flex justify-between items-start">
                                     <div>
                                         <h3 className="text-lg font-medium text-gray-900">{team.name}</h3>
-                                        <p className="text-sm text-gray-500">{team.theme}</p>
-                                        <p className="text-xs text-gray-400 mt-1">ID: {team.id}</p>
+                                        <p className="text-sm text-gray-500">{team.themeId?.name || team.theme || '—'}</p>
                                     </div>
                                     {evaluated ? (
                                         <CheckCircle className="h-6 w-6 text-green-500" />
@@ -161,9 +167,9 @@ export default function EvaluateTeams() {
                                         </button>
                                     ) : (
                                         <button
+                                            type="button"
                                             onClick={() => handleEvaluateClick(team)}
-                                            disabled={!isEvaluationTime}
-                                            className="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-secondary hover:bg-secondary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-secondary disabled:opacity-50 disabled:cursor-not-allowed"
+                                            className="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-secondary hover:bg-secondary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-secondary"
                                         >
                                             Evaluate
                                         </button>
@@ -177,40 +183,54 @@ export default function EvaluateTeams() {
 
             <Modal
                 isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-                title={`Evaluate Team: ${selectedTeam?.name}`}
+                onClose={() => { if (!isSubmitting) { setIsModalOpen(false); setSelectedTeam(null); setScore(''); } }}
+                title={selectedTeam ? `Evaluate: ${selectedTeam.name}` : 'Evaluate Team'}
             >
-                <form onSubmit={handleSubmitScore} className="space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700">Team</label>
-                        <p className="text-gray-900">{selectedTeam?.name} ({selectedTeam?.theme})</p>
-                    </div>
+                {selectedTeam ? (
+                    <form onSubmit={handleSubmitScore} className="space-y-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700">Team</label>
+                            <p className="text-gray-900 font-medium">{selectedTeam.name}</p>
+                            <p className="text-sm text-gray-500">{selectedTeam.themeId?.name ?? selectedTeam.theme ?? '—'}</p>
+                        </div>
 
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700">Score (0.0 - 10.0)</label>
-                        <input
-                            type="number"
-                            step="0.1"
-                            min="0"
-                            max="10"
-                            required
-                            value={score}
-                            onChange={e => setScore(e.target.value)}
-                            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-secondary focus:border-secondary sm:text-lg"
-                            placeholder="e.g. 8.5"
-                        />
-                    </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700">Score (0.0 – 10.0, decimals allowed)</label>
+                            <input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                max="10"
+                                required
+                                value={score}
+                                onChange={e => setScore(e.target.value)}
+                                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-secondary focus:border-secondary sm:text-lg"
+                                placeholder="e.g. 8.25"
+                            />
+                            <p className="mt-1 text-xs text-gray-500">Enter a score out of 10 (e.g. 7.5, 8.25)</p>
+                        </div>
 
-                    <div className="mt-5 sm:mt-6">
-                        <button
-                            type="submit"
-                            disabled={isSubmitting}
-                            className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-secondary text-base font-medium text-white hover:bg-secondary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-secondary sm:text-sm disabled:opacity-50"
-                        >
-                            {isSubmitting ? 'Submitting...' : 'Submit Score'}
-                        </button>
-                    </div>
-                </form>
+                        <div className="mt-5 sm:mt-6 flex gap-2">
+                            <button
+                                type="button"
+                                onClick={() => { setIsModalOpen(false); setSelectedTeam(null); setScore(''); }}
+                                disabled={isSubmitting}
+                                className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="submit"
+                                disabled={isSubmitting}
+                                className="flex-1 inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-secondary text-base font-medium text-white hover:bg-secondary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-secondary sm:text-sm disabled:opacity-50"
+                            >
+                                {isSubmitting ? 'Submitting...' : 'Submit Score'}
+                            </button>
+                        </div>
+                    </form>
+                ) : (
+                    <p className="text-gray-500">No team selected.</p>
+                )}
             </Modal>
         </div>
     );

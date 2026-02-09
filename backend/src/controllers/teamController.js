@@ -1,7 +1,8 @@
 import mongoose from 'mongoose';
 import Team from '../models/Team.js';
 import User from '../models/User.js';
-import { generatePassword } from '../utils/passwordGenerator.js';
+import Evaluation from '../models/Evaluation.js';
+import Complaint from '../models/Complaint.js';
 
 // @desc    Get all teams
 // @route   GET /api/teams
@@ -32,8 +33,9 @@ export const createTeam = async (req, res) => {
     try {
         const { name, leaderName, themeId, username } = req.body;
 
-        // Generate password
-        const password = generatePassword();
+        const leaderUsername = (username || leaderName.toLowerCase().replace(/\s+/g, '')).trim().toLowerCase();
+        // Initial password is same as username; user changes it on first login
+        const password = leaderUsername;
 
         // Generate IDs upfront to resolve circular dependency
         const teamIdObj = new mongoose.Types.ObjectId();
@@ -42,7 +44,7 @@ export const createTeam = async (req, res) => {
         // Create user account for team leader
         const leader = await User.create({
             _id: leaderIdObj,
-            username: username || leaderName.toLowerCase().replace(/\s+/g, ''),
+            username: leaderUsername,
             password,
             role: 'PARTICIPANT',
             name: leaderName,
@@ -73,7 +75,7 @@ export const createTeam = async (req, res) => {
             data: team,
             credentials: {
                 username: leader.username,
-                password // Send password only once
+                password: leaderUsername // Initial password = username
             }
         });
     } catch (error) {
@@ -116,7 +118,7 @@ export const updateTeam = async (req, res) => {
     }
 };
 
-// @desc    Delete team and associated user
+// @desc    Delete team and all related data (user, evaluations, complaints)
 // @route   DELETE /api/teams/:id
 // @access  Private (Admin only)
 export const deleteTeam = async (req, res) => {
@@ -130,15 +132,24 @@ export const deleteTeam = async (req, res) => {
             });
         }
 
-        // Delete associated user account
-        await User.findByIdAndDelete(team.leaderId);
+        const teamId = team._id;
+        const leaderId = team.leaderId;
+
+        // Delete all evaluations for this team
+        await Evaluation.deleteMany({ teamId });
+
+        // Delete all complaints by this team
+        await Complaint.deleteMany({ teamId });
+
+        // Delete team leader user account
+        await User.findByIdAndDelete(leaderId);
 
         // Delete team
         await team.deleteOne();
 
         res.json({
             success: true,
-            message: 'Team and associated user deleted'
+            message: 'Team and all related data deleted'
         });
     } catch (error) {
         console.error('Delete team error:', error);

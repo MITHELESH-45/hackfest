@@ -1,5 +1,4 @@
 import User from '../models/User.js';
-import { generatePassword } from '../utils/passwordGenerator.js';
 
 // @desc    Get all judges
 // @route   GET /api/judges
@@ -37,12 +36,13 @@ export const createJudge = async (req, res) => {
             });
         }
 
-        // Generate password
-        const password = generatePassword();
+        const judgeUsername = username.trim().toLowerCase();
+        // Initial password is same as username; judge changes it on first login
+        const password = judgeUsername;
 
         // Create judge account
         const judge = await User.create({
-            username: username.toLowerCase(),
+            username: judgeUsername,
             password,
             role: 'JUDGE',
             name,
@@ -57,7 +57,7 @@ export const createJudge = async (req, res) => {
             data: judge.toJSON(),
             credentials: {
                 username: judge.username,
-                password // Send password only once
+                password: judgeUsername // Initial password = username
             }
         });
     } catch (error) {

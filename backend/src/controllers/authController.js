@@ -36,6 +36,14 @@ export const login = async (req, res) => {
             });
         }
 
+        // Populate role-specific fields for frontend display
+        if (user.role === 'JUDGE' && user.assignedTheme) {
+            await user.populate('assignedTheme', 'name');
+        }
+        if (user.role === 'PARTICIPANT' && user.teamId) {
+            await user.populate({ path: 'teamId', select: 'name themeId', populate: { path: 'themeId', select: 'name' } });
+        }
+
         // Generate JWT token
         const token = jwt.sign(
             { id: user._id, role: user.role },

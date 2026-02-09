@@ -19,11 +19,13 @@ export default function EvaluationMonitoring() {
 
     if (loading && teamsStatus.length === 0) return <LoadingSpinner />;
 
-    // Filter columns based on readiness and evaluation count
+    const roundKey = `round${currentRound}`;
     const monitorData = teamsStatus.map(team => {
-        const isReady = team.isReady?.[currentRound];
-        // Count evaluations for this team in current round
-        const evalCount = evaluations.filter(e => e.teamId === team.id && e.round === currentRound).length;
+        const isReady = team.readiness?.[roundKey];
+        const teamIdStr = String(team._id);
+        const evalCount = (evaluations || []).filter(
+            e => String(e.teamId?._id || e.teamId) === teamIdStr && Number(e.round) === Number(currentRound)
+        ).length;
 
         return {
             ...team,
@@ -34,7 +36,11 @@ export default function EvaluationMonitoring() {
 
     const columns = [
         { key: 'name', header: 'Team Name' },
-        { key: 'theme', header: 'Theme' },
+        {
+            key: 'theme',
+            header: 'Theme',
+            render: (row) => row.themeId?.name || row.theme || '—'
+        },
         {
             key: 'status',
             header: 'Readiness',
@@ -87,7 +93,7 @@ export default function EvaluationMonitoring() {
                         Team Progress
                     </h3>
                 </div>
-                <Table columns={columns} data={monitorData} />
+                <Table columns={columns} data={monitorData} keyField="_id" />
             </div>
         </div>
     );

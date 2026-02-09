@@ -21,14 +21,7 @@ const evaluationSchema = new mongoose.Schema({
         type: Number,
         required: [true, 'Score is required'],
         min: 0,
-        max: 10,
-        validate: {
-            validator: function (value) {
-                // Allow up to 2 decimal places
-                return /^\d+(\.\d{1,2})?$/.test(value.toString());
-            },
-            message: 'Score must have at most 2 decimal places'
-        }
+        max: 10 // Decimals allowed (e.g. 7.5, 8.25)
     },
     criteria: {
         innovation: Number,

@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { authApi } from '../api/authApi';
 import { Lock } from 'lucide-react';
 
 export default function ChangePassword() {
     const navigate = useNavigate();
     const { user, completeFirstLogin } = useAuth();
+    const [currentPassword, setCurrentPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [error, setError] = useState('');
@@ -23,23 +25,30 @@ export default function ChangePassword() {
             return;
         }
         if (newPassword.length < 6) {
-            setError('Password must be at least 6 characters');
+            setError('New password must be at least 6 characters');
+            return;
+        }
+        if (!currentPassword) {
+            setError('Please enter your current password (initial password is your username)');
             return;
         }
 
         setIsLoading(true);
-        // Simulate API call
-        setTimeout(() => {
+        setError('');
+        try {
+            await authApi.changePassword(currentPassword, newPassword);
             completeFirstLogin();
-            setIsLoading(false);
-            // Redirect based on role
             switch (user.role) {
                 case 'ADMIN': navigate('/admin/dashboard'); break;
                 case 'JUDGE': navigate('/judge/dashboard'); break;
                 case 'PARTICIPANT': navigate('/participant/dashboard'); break;
                 default: navigate('/');
             }
-        }, 1000);
+        } catch (err) {
+            setError(err.message || 'Failed to update password. Current password may be wrong (use your username if first login).');
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
@@ -49,13 +58,30 @@ export default function ChangePassword() {
                     Change Password
                 </h2>
                 <p className="mt-2 text-center text-sm text-gray-600">
-                    Please set a new password for your first login.
+                    Please set a new password. On first login, your current password is your username.
                 </p>
             </div>
 
             <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
                 <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
                     <form className="space-y-6" onSubmit={handleSubmit}>
+                        <div>
+                            <label htmlFor="currentPassword" className="block text-sm font-medium text-gray-700">
+                                Current Password <span className="text-gray-500">(username if first login)</span>
+                            </label>
+                            <div className="mt-1">
+                                <input
+                                    id="currentPassword"
+                                    type="password"
+                                    required
+                                    value={currentPassword}
+                                    onChange={(e) => setCurrentPassword(e.target.value)}
+                                    className="block w-full appearance-none rounded-md border border-gray-300 px-3 py-2 placeholder-gray-400 shadow-sm focus:border-secondary focus:outline-none focus:ring-secondary sm:text-sm"
+                                    placeholder="Your current password or username"
+                                />
+                            </div>
+                        </div>
+
                         <div>
                             <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700">
                                 New Password

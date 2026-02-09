@@ -7,10 +7,15 @@ export const evaluationApi = {
         return response.data;
     },
 
-    // Get evaluations for a specific judge (Judge Dashboard)
+    // Get evaluations for a specific judge (Judge Dashboard / History)
     getJudgeEvaluations: async () => {
         const response = await apiClient.get('/evaluations/judge');
-        // Backend infers judgeId from token
+        return response.data;
+    },
+
+    // Get my team's evaluation status (Participant: which rounds are completed)
+    getMyTeamEvaluationStatus: async () => {
+        const response = await apiClient.get('/evaluations/my-team');
         return response.data;
     },
 

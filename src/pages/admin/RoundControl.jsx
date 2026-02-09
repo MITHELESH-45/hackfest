@@ -9,6 +9,11 @@ export default function RoundControl() {
     const [loading, setLoading] = useState(false);
     const [localHackathon, setLocalHackathon] = useState(hackathon);
 
+    // Sync local state when hackathon config loads or updates from context
+    React.useEffect(() => {
+        if (hackathon) setLocalHackathon(hackathon);
+    }, [hackathon]);
+
     const updateRound = async (round, status) => {
         if (!window.confirm(`Are you sure you want to change Round ${round} to ${status}?`)) return;
 
@@ -16,19 +21,23 @@ export default function RoundControl() {
         try {
             // Logic to update round status
             // In mock, we just update config. In real app, separate endpoint.
-            let newRoundStatus = { ...localHackathon.roundStatus };
-
+            const roundKey = `round${round}`;
+            const current = localHackathon.roundStatus || {};
+            const newRoundStatus = {
+                round1: current.round1 || 'LOCKED',
+                round2: current.round2 || 'LOCKED',
+                round3: current.round3 || 'LOCKED'
+            };
             if (status === 'ACTIVE') {
-                // Lock others
-                Object.keys(newRoundStatus).forEach(r => {
+                ['round1', 'round2', 'round3'].forEach(r => {
                     if (newRoundStatus[r] === 'ACTIVE') newRoundStatus[r] = 'LOCKED';
                 });
             }
-            newRoundStatus[round] = status;
+            newRoundStatus[roundKey] = status;
 
             const newConfig = {
                 ...localHackathon,
-                currentRound: parseInt(round), // Set current round pointer
+                currentRound: parseInt(round, 10),
                 roundStatus: newRoundStatus
             };
 
@@ -54,7 +63,7 @@ export default function RoundControl() {
 
             <div className="space-y-6">
                 {rounds.map(round => {
-                    const status = localHackathon.roundStatus?.[round] || 'LOCKED';
+                    const status = localHackathon.roundStatus?.[`round${round}`] || 'LOCKED';
                     const isActive = status === 'ACTIVE';
                     const isCompleted = status === 'COMPLETED';
 
