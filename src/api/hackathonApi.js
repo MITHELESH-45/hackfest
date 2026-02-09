@@ -1,44 +1,40 @@
-import { MOCK_HACKATHON } from '../data/mockHackathon';
-import { MOCK_TIMELINE } from '../data/mockTimeline';
-import { delay } from '../utils/delay';
-
-let hackathonStore = { ...MOCK_HACKATHON };
-let timelineStore = [...MOCK_TIMELINE];
+import { apiClient } from './apiClient';
 
 export const hackathonApi = {
     getConfig: async () => {
-        await delay(300);
-        return { ...hackathonStore };
+        const response = await apiClient.get('/hackathon/config');
+        return response.data;
     },
 
     updateConfig: async (config) => {
-        await delay(500);
-        hackathonStore = { ...hackathonStore, ...config };
-        return { ...hackathonStore };
+        const response = await apiClient.put('/hackathon/config', config);
+        return response.data;
     },
 
     getTimeline: async () => {
-        await delay(300);
-        const sorted = [...timelineStore].sort((a, b) => new Date(a.from) - new Date(b.from));
-        return sorted;
+        const response = await apiClient.get('/hackathon/timeline');
+        // Backend returns parsed dates from JSON as strings, converting strings to Date objects might be handled in components 
+        // but let's ensure dates coming back are usable if needed, though usually string is fine for now.
+        return response.data;
     },
 
     addTimelineSlot: async (slot) => {
-        await delay(500);
-        const newSlot = { ...slot, id: Date.now() };
-        timelineStore = [...timelineStore, newSlot];
-        return newSlot;
+        const response = await apiClient.post('/hackathon/timeline', slot);
+        return response.data;
     },
 
     updateTimelineSlot: async (id, updates) => {
-        await delay(500);
-        timelineStore = timelineStore.map(s => s.id === id ? { ...s, ...updates } : s);
-        return { success: true };
+        const response = await apiClient.put(`/hackathon/timeline/${id}`, updates);
+        return response; // { success: true, data: ... }
     },
 
     deleteTimelineSlot: async (id) => {
-        await delay(500);
-        timelineStore = timelineStore.filter(s => s.id !== id);
-        return { success: true };
+        const response = await apiClient.delete(`/hackathon/timeline/${id}`);
+        return response;
+    },
+
+    getStats: async () => {
+        const response = await apiClient.get('/hackathon/stats');
+        return response;
     }
 };

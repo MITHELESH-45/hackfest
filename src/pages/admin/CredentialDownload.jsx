@@ -25,9 +25,35 @@ export default function CredentialDownload() {
         const data = type === 'TEAMS' ? teams : judges;
         if (!data.length) return alert('No data to export');
 
-        // Mock export
-        const csvContent = "data:text/csv;charset=utf-8,"
-            + data.map(e => e.name + "," + (e.username || '')).join("\n");
+        let csvContent = "data:text/csv;charset=utf-8,";
+
+        if (type === 'TEAMS') {
+            // Headers
+            csvContent += "Team ID,Team Name,Theme,Username,Password Status\n";
+            // Rows
+            csvContent += data.map(team => {
+                const id = team._id;
+                // Escape commas and quotes in names
+                const name = `"${(team.name || '').replace(/"/g, '""')}"`;
+                const theme = `"${(team.themeId?.name || 'N/A').replace(/"/g, '""')}"`;
+                const username = team.leaderId?.username || 'N/A';
+                const password = "Saved at creation (Hash protected)";
+                return `${id},${name},${theme},${username},${password}`;
+            }).join("\n");
+        } else {
+            // Headers for Judges
+            csvContent += "Judge ID,Name,Assigned Theme,Username,Password Status\n";
+            // Rows
+            csvContent += data.map(judge => {
+                const id = judge._id;
+                const name = `"${(judge.name || '').replace(/"/g, '""')}"`;
+                const theme = `"${(judge.assignedTheme?.name || 'N/A').replace(/"/g, '""')}"`;
+                const username = judge.username || 'N/A';
+                const password = "Saved at creation (Hash protected)";
+                return `${id},${name},${theme},${username},${password}`;
+            }).join("\n");
+        }
+
         const encodedUri = encodeURI(csvContent);
         const link = document.createElement("a");
         link.setAttribute("href", encodedUri);
@@ -66,10 +92,24 @@ export default function CredentialDownload() {
                     columns={[
                         { key: 'name', header: 'Team Name' },
                         { key: 'leaderName', header: 'Leader' },
-                        { key: 'theme', header: 'Theme' },
-                        { key: 'username', header: 'Username' } // Will show N/A if not in Mock Data directly
+                        {
+                            key: 'theme',
+                            header: 'Theme',
+                            render: (row) => row.themeId?.name || 'N/A'
+                        },
+                        {
+                            key: 'username',
+                            header: 'Username',
+                            render: (row) => {
+                                // The username is stored in the leader user account
+                                // We need to fetch this from the leaderId if populated
+                                // For now, show the team leader's username if available
+                                return row.leaderId?.username || 'N/A';
+                            }
+                        }
                     ]}
                     data={teams}
+                    keyField="_id"
                 />
             </div>
 
@@ -92,10 +132,15 @@ export default function CredentialDownload() {
                 <Table
                     columns={[
                         { key: 'name', header: 'Name' },
-                        { key: 'assignedTheme', header: 'Assigned Theme' },
+                        {
+                            key: 'assignedTheme',
+                            header: 'Assigned Theme',
+                            render: (row) => row.assignedTheme?.name || 'N/A'
+                        },
                         { key: 'username', header: 'Username' }
                     ]}
                     data={judges}
+                    keyField="_id"
                 />
             </div>
         </div>

@@ -1,16 +1,32 @@
-import React from 'react';
 import { useHackathon } from '../../context/HackathonContext';
+import { hackathonApi } from '../../api/hackathonApi';
+import React, { useState, useEffect } from 'react';
 import VerticalTimeline from '../../components/timeline/VerticalTimeline';
 import { Users, Briefcase, Award, Clock } from 'lucide-react';
 
 export default function AdminDashboard() {
     const { hackathon, activeSlot } = useHackathon();
-    // Mock counts - in real app, fetch from APIs
+    const [statsData, setStatsData] = useState({ teams: 0, judges: 0, themes: 0, round: 1 });
+
+    useEffect(() => {
+        const fetchStats = async () => {
+            try {
+                const res = await hackathonApi.getStats();
+                if (res.success) {
+                    setStatsData(res.data);
+                }
+            } catch (err) {
+                console.error("Failed to fetch stats", err);
+            }
+        };
+        fetchStats();
+    }, []);
+
     const stats = [
-        { name: 'Total Teams', value: '4', icon: Users, color: 'text-blue-600', bg: 'bg-blue-100' },
-        { name: 'Total Judges', value: '3', icon: Award, color: 'text-purple-600', bg: 'bg-purple-100' },
-        { name: 'Themes', value: '5', icon: Briefcase, color: 'text-green-600', bg: 'bg-green-100' },
-        { name: 'Round', value: hackathon?.currentRound || 1, icon: Clock, color: 'text-orange-600', bg: 'bg-orange-100' },
+        { name: 'Total Teams', value: statsData.teams, icon: Users, color: 'text-blue-600', bg: 'bg-blue-100' },
+        { name: 'Total Judges', value: statsData.judges, icon: Award, color: 'text-purple-600', bg: 'bg-purple-100' },
+        { name: 'Themes', value: statsData.themes, icon: Briefcase, color: 'text-green-600', bg: 'bg-green-100' },
+        { name: 'Round', value: statsData.round, icon: Clock, color: 'text-orange-600', bg: 'bg-orange-100' },
     ];
 
     return (

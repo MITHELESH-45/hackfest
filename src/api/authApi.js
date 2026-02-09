@@ -1,38 +1,32 @@
-import { MOCK_USERS } from '../data/mockUsers';
-import { delay } from '../utils/delay';
+import { apiClient } from './apiClient';
 
 export const authApi = {
     login: async (username, password, role) => {
-        await delay(800); // Simulate network latency
+        const response = await apiClient.post('/auth/login', { username, password, role });
 
-        // Find user by username and role
-        // In real app, we check password hash. Here simple check.
-        const user = MOCK_USERS.find(u =>
-            u.username === username &&
-            u.password === password &&
-            u.role === role
-        );
-
-        if (!user) {
-            throw new Error('Invalid credentials or role mismatch');
+        // Save token and user on success
+        if (response.success && response.token) {
+            localStorage.setItem('hackfest_token', response.token);
+            // The user object is returned in response.user
         }
 
-        // Return user info sans password
-        const { password: _, ...userInfo } = user;
-        return {
-            user: userInfo,
-            token: 'mock-jwt-token-' + Date.now()
-        };
+        return response;
     },
 
-    changePassword: async (username, newPassword) => {
-        await delay(500);
-        // In a real app, updated DB. Here we just return success.
-        return { success: true };
+    changePassword: async (currentPassword, newPassword) => {
+        return apiClient.post('/auth/change-password', { currentPassword, newPassword });
     },
 
     logout: async () => {
-        await delay(300);
+        try {
+            await apiClient.post('/auth/logout', {});
+        } catch (err) {
+            console.error('Logout API error', err);
+        } finally {
+            // Always clean up local storage
+            localStorage.removeItem('hackfest_token');
+            localStorage.removeItem('hackfest_user');
+        }
         return true;
     }
 };

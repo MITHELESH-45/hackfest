@@ -13,6 +13,10 @@ export default function TeamManagement() {
     const [loading, setLoading] = useState(true);
     const [modalOpen, setModalOpen] = useState(false);
 
+    // Success Modal State
+    const [successModalOpen, setSuccessModalOpen] = useState(false);
+    const [successCreds, setSuccessCreds] = useState(null);
+
     // Form State
     const [formData, setFormData] = useState({ name: '', leaderName: '', theme: '' });
     const [generatedCreds, setGeneratedCreds] = useState(null);
@@ -39,29 +43,44 @@ export default function TeamManagement() {
         if (!generatedCreds) return alert('Please generate credentials first');
 
         try {
-            await teamApi.create({
+            const response = await teamApi.create({
                 name: formData.name,
                 leaderName: formData.leaderName,
-                theme: formData.theme,
-                username: generatedCreds.username,
-                password: generatedCreds.password
+                themeId: formData.theme,
+                username: generatedCreds.username
             });
-            // Refresh
+
+            // Refresh teams list
             const data = await teamApi.getAll();
             setTeams(data);
+
+            // IMPORTANT: Use the credentials returned from the backend!
+            // The backend generates its own password, so we must show that one
+            setSuccessCreds({
+                username: response.credentials?.username || generatedCreds.username,
+                password: response.credentials?.password || generatedCreds.password
+            });
+
             setModalOpen(false);
+            setSuccessModalOpen(true);
+
+            // Reset form
             setFormData({ name: '', leaderName: '', theme: '' });
             setGeneratedCreds(null);
         } catch (err) {
-            alert('Failed to register team');
+            alert('Failed to register team: ' + (err.message || 'Unknown error'));
         }
     };
 
     const columns = [
         { key: 'name', header: 'Team Name' },
         { key: 'leaderName', header: 'Team Leader' },
-        { key: 'theme', header: 'Theme' },
-        { key: 'username', header: 'Username', render: (row) => row.username || 'N/A' } // Mock API might need to return username
+        {
+            key: 'themeId',
+            header: 'Theme',
+            render: (row) => row.themeId?.name || 'N/A'
+        },
+        { key: 'username', header: 'Username', render: (row) => row.leaderId?.username || 'N/A' }
     ];
     // Note: mockTeams.js doesn't store username directly in MOCK_TEAMS usually, 
     // but for admin display purposes we might want to attach it in the API response or store it.
@@ -122,7 +141,7 @@ export default function TeamManagement() {
                         >
                             <option value="">Select Theme</option>
                             {themes.map(t => (
-                                <option key={t.id} value={t.name}>{t.name}</option>
+                                <option key={t._id} value={t._id}>{t.name}</option>
                             ))}
                         </select>
                     </div>
@@ -164,6 +183,38 @@ export default function TeamManagement() {
                     </div>
                 </form>
             </Modal>
-        </div>
+
+
+            {/* Success Modal */}
+            <Modal
+                isOpen={successModalOpen}
+                onClose={() => setSuccessModalOpen(false)}
+                title="Team Registered Successfully"
+            >
+                <div>
+                    <div className="bg-green-50 p-4 rounded-md border border-green-200 mb-4">
+                        <p className="text-green-800 text-sm font-medium mb-2">
+                            Please save these credentials securely. They will not be shown again.
+                        </p>
+                        <div className="space-y-2 font-mono text-sm">
+                            <div className="flex justify-between">
+                                <span className="text-gray-500">Username:</span>
+                                <span className="font-bold select-all">{successCreds?.username}</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-gray-500">Password:</span>
+                                <span className="font-bold select-all">{successCreds?.password}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <button
+                        onClick={() => setSuccessModalOpen(false)}
+                        className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-secondary text-base font-medium text-white hover:bg-secondary-dark sm:text-sm"
+                    >
+                        Close
+                    </button>
+                </div>
+            </Modal>
+        </div >
     );
 }

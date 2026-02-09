@@ -1,49 +1,33 @@
-import { MOCK_TEAMS } from '../data/mockTeams';
-import { MOCK_USERS } from '../data/mockUsers';
-import { delay } from '../utils/delay';
-
-let teamsStore = [...MOCK_TEAMS];
-let usersStore = [...MOCK_USERS];
+import { apiClient } from './apiClient';
 
 export const teamApi = {
     getAll: async () => {
-        await delay(300);
-        return [...teamsStore];
+        const response = await apiClient.get('/teams');
+        return response.data;
     },
 
     create: async (teamData) => {
-        await delay(500);
-        const newTeam = {
-            ...teamData,
-            id: 'T' + Date.now().toString().slice(-4),
-            isReady: { 1: false, 2: false, 3: true },
-            evaluations: { 1: [], 2: [], 3: [] }
-        };
-        teamsStore.push(newTeam);
-
-        // Create user login
-        usersStore.push({
-            username: teamData.username,
-            password: teamData.password,
-            role: 'PARTICIPANT',
-            name: teamData.leaderName,
-            teamId: newTeam.id,
-            teamName: teamData.name,
-            theme: teamData.theme,
-            isFirstLogin: true
-        });
-
-        return newTeam;
+        // teamData: { name, leaderName, themeId, username }
+        const response = await apiClient.post('/teams', teamData);
+        // Response contains { success: true, data: team, credentials: {username, password} }
+        // The frontend component expects the created team, but we might want to surface credentials.
+        // For now, return the whole response or attach credentials to team object?
+        // Let's return the full response data structure so the UI can handle credentials display.
+        return { ...response.data, credentials: response.credentials };
     },
 
-    // For later use (Round Control/Readiness)
+    update: async (id, data) => {
+        const response = await apiClient.put(`/teams/${id}`, data);
+        return response.data;
+    },
+
+    delete: async (id) => {
+        return await apiClient.delete(`/teams/${id}`);
+    },
+
     updateReadiness: async (teamId, round, status) => {
-        await delay(300);
-        teamsStore = teamsStore.map(t =>
-            t.id === teamId
-                ? { ...t, isReady: { ...t.isReady, [round]: status } }
-                : t
-        );
-        return { success: true };
+        // Endpoint: POST /api/teams/:id/ready
+        const response = await apiClient.post(`/teams/${teamId}/ready`, { round, status });
+        return response;
     }
 };

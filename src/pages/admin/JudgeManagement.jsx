@@ -14,6 +14,8 @@ export default function JudgeManagement() {
     const [modalOpen, setModalOpen] = useState(false);
     const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
     const [judgeToDelete, setJudgeToDelete] = useState(null);
+    const [successModalOpen, setSuccessModalOpen] = useState(false);
+    const [successCreds, setSuccessCreds] = useState(null);
 
     // Form State
     const [formData, setFormData] = useState({ name: '', assignedTheme: '' });
@@ -31,10 +33,10 @@ export default function JudgeManagement() {
     }, []);
 
     // Get themes that are already assigned to judges
-    const assignedThemes = judges.map(j => j.assignedTheme);
+    const assignedThemeIds = judges.map(j => j.assignedTheme?._id).filter(Boolean);
 
     // Filter available themes (exclude already assigned ones)
-    const availableThemes = themes.filter(t => !assignedThemes.includes(t.name));
+    const availableThemes = themes.filter(t => !assignedThemeIds.includes(t._id));
 
     const handleGenerateValues = () => {
         if (!formData.name) return alert('Enter name first');
@@ -47,20 +49,31 @@ export default function JudgeManagement() {
         if (!generatedCreds) return alert('Please generate credentials first');
 
         try {
-            await judgeApi.create({
+            const response = await judgeApi.create({
                 name: formData.name,
                 assignedTheme: formData.assignedTheme,
-                username: generatedCreds.username,
-                password: generatedCreds.password
+                username: generatedCreds.username
             });
-            // Refresh
+
+            // Refresh judges list
             const data = await judgeApi.getAll();
             setJudges(data);
+
+            // IMPORTANT: Use the credentials returned from the backend!
+            // The backend generates its own password, so we must show that one
+            setSuccessCreds({
+                username: response.credentials?.username || generatedCreds.username,
+                password: response.credentials?.password || generatedCreds.password
+            });
+
             setModalOpen(false);
+            setSuccessModalOpen(true);
+
+            // Reset form
             setFormData({ name: '', assignedTheme: '' });
             setGeneratedCreds(null);
         } catch (err) {
-            alert('Failed to register judge');
+            alert('Failed to register judge: ' + (err.message || 'Unknown error'));
         }
     };
 
@@ -73,7 +86,7 @@ export default function JudgeManagement() {
         if (!judgeToDelete) return;
 
         try {
-            await judgeApi.delete(judgeToDelete.id);
+            await judgeApi.delete(judgeToDelete._id);
             // Refresh
             const data = await judgeApi.getAll();
             setJudges(data);
@@ -86,7 +99,11 @@ export default function JudgeManagement() {
 
     const columns = [
         { key: 'name', header: 'Judge Name' },
-        { key: 'assignedTheme', header: 'Assigned Theme' },
+        {
+            key: 'assignedTheme',
+            header: 'Assigned Theme',
+            render: (judge) => judge.assignedTheme?.name || 'N/A'
+        },
         { key: 'username', header: 'Username' },
         {
             key: 'actions',
@@ -147,7 +164,7 @@ export default function JudgeManagement() {
                             <option value="">Select Theme</option>
                             {availableThemes.length > 0 ? (
                                 availableThemes.map(t => (
-                                    <option key={t.id} value={t.name}>{t.name}</option>
+                                    <option key={t._id} value={t._id}>{t.name}</option>
                                 ))
                             ) : (
                                 <option disabled>All themes are assigned</option>
@@ -214,7 +231,7 @@ export default function JudgeManagement() {
                         This will also remove their login credentials.
                     </p>
                     <p className="text-sm text-gray-500">
-                        Theme "<strong>{judgeToDelete?.assignedTheme}</strong>" will become available for other judges.
+                        Theme "<strong>{judgeToDelete?.assignedTheme?.name}</strong>" will become available for other judges.
                     </p>
                     <div className="flex gap-3 mt-6">
                         <button
@@ -233,6 +250,37 @@ export default function JudgeManagement() {
                             Delete Judge
                         </button>
                     </div>
+                </div>
+            </Modal>
+
+            {/* Success Modal */}
+            <Modal
+                isOpen={successModalOpen}
+                onClose={() => setSuccessModalOpen(false)}
+                title="Judge Registered Successfully"
+            >
+                <div>
+                    <div className="bg-green-50 p-4 rounded-md border border-green-200 mb-4">
+                        <p className="text-green-800 text-sm font-medium mb-2">
+                            Please save these credentials securely. They will not be shown again.
+                        </p>
+                        <div className="space-y-2 font-mono text-sm">
+                            <div className="flex justify-between">
+                                <span className="text-gray-500">Username:</span>
+                                <span className="font-bold select-all">{successCreds?.username}</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-gray-500">Password:</span>
+                                <span className="font-bold select-all">{successCreds?.password}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <button
+                        onClick={() => setSuccessModalOpen(false)}
+                        className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-secondary text-base font-medium text-white hover:bg-secondary-dark sm:text-sm"
+                    >
+                        Close
+                    </button>
                 </div>
             </Modal>
         </div>
