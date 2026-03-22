@@ -161,6 +161,44 @@ export default function HackathonManagement() {
                     </div>
                 </div>
             </div>
+
+            {/* Danger Zone */}
+            <div className="mt-8 bg-red-50 border-l-4 border-red-500 p-4">
+                <div className="flex flex-col md:flex-row md:justify-between md:items-start space-y-4 md:space-y-0">
+                    <div className="max-w-xl">
+                        <h3 className="text-lg font-bold text-red-800">Danger Zone</h3>
+                        <div className="mt-2 text-sm text-red-700 space-y-2">
+                            <p><strong>Restart Hackathon</strong></p>
+                            <p>
+                                Completely reset the hackathon. This will permanently delete all teams, judges, participants, themes, timelines, submissions, evaluations, and complaints. The admin account will be retained, and the hackathon will be reset to Round 1 (Locked state).
+                            </p>
+                            <p><strong>This action cannot be undone.</strong></p>
+                        </div>
+                    </div>
+                    <div>
+                        <button
+                            onClick={async () => {
+                                if (window.confirm('⚠️ WARNING: You are about to completely reset this hackathon. ALL data (teams, judges, submissions, evaluations etc) will be PERMANENTLY DELETED.\n\nAre you absolutely sure you want to proceed?')) {
+                                    try {
+                                        setIsSaving(true);
+                                        await hackathonApi.restart();
+                                        alert('Hackathon has been successfully restarted.');
+                                        window.location.reload();
+                                    } catch (err) {
+                                        alert('Failed to restart hackathon.');
+                                    } finally {
+                                        setIsSaving(false);
+                                    }
+                                }
+                            }}
+                            disabled={isSaving}
+                            className="inline-flex items-center px-4 py-2 border border-red-500 rounded-md shadow-sm text-sm font-medium text-red-700 bg-red-50 hover:bg-red-500 hover:text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 transition-colors duration-200 md:mt-2"
+                        >
+                            Restart Hackathon
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
     );
 }

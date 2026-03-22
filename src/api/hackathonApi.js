@@ -36,5 +36,10 @@ export const hackathonApi = {
     getStats: async () => {
         const response = await apiClient.get('/hackathon/stats');
         return response;
+    },
+
+    restart: async () => {
+        const response = await apiClient.post('/hackathon/restart');
+        return response.data;
     }
 };

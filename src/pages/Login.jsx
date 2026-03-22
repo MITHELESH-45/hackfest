@@ -50,30 +50,41 @@ export default function Login() {
     };
 
     return (
-        <div className="min-h-screen bg-primary-dark flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-            <div className="sm:mx-auto sm:w-full sm:max-w-md">
-                <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-                    Sign in to your account
-                </h2>
-                <p className="mt-2 text-center text-sm text-gray-600">
-                    Hackathon Management System
-                </p>
-            </div>
+        <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden bg-mesh-light selection:bg-pink-500 selection:text-white">
+            {/* Animated Background Blobs */}
+            <div className="absolute top-0 -left-4 w-96 h-96 bg-purple-300 rounded-full mix-blend-multiply filter blur-3xl opacity-50 animate-blob"></div>
+            <div className="absolute top-0 -right-4 w-96 h-96 bg-sky-300 rounded-full mix-blend-multiply filter blur-3xl opacity-50 animate-blob" style={{ animationDelay: '2s' }}></div>
+            <div className="absolute -bottom-8 left-20 w-96 h-96 bg-pink-300 rounded-full mix-blend-multiply filter blur-3xl opacity-50 animate-blob" style={{ animationDelay: '4s' }}></div>
 
-            <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-                <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-                    <form className="space-y-6" onSubmit={handleSubmit}>
+            <div className="relative w-full max-w-md z-10 animate-fade-in-up">
+                <div className="text-center mb-8">
+                    <div className="mx-auto w-16 h-16 bg-white/80 backdrop-blur-md rounded-2xl shadow-glass-card flex items-center justify-center mb-6 transform -rotate-3 hover:rotate-0 transition-all duration-300 border border-white/50 group">
+                        <Lock className="h-8 w-8 text-secondary group-hover:scale-110 transition-transform duration-300" />
+                    </div>
+                    <h2 className="text-4xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-br from-indigo-600 via-purple-500 to-pink-500 pb-1">
+                        Welcome Back
+                    </h2>
+                    <p className="mt-2 text-sm text-slate-600 font-medium tracking-wide uppercase">
+                        Hackfest Platform
+                    </p>
+                </div>
+
+                <div className="card !p-8 shadow-glass-card hover:shadow-glass-card-hover border border-white/60 backdrop-blur-xl bg-white/50 relative overflow-hidden">
+                    {/* Subtle inner highlight */}
+                    <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white to-transparent opacity-80"></div>
+                    
+                    <form className="space-y-6 relative z-10" onSubmit={handleSubmit}>
                         <div>
-                            <label htmlFor="role" className="block text-sm font-medium text-gray-700">
+                            <label htmlFor="role" className="block text-sm font-semibold text-slate-700">
                                 Select Role
                             </label>
-                            <div className="mt-1 relative">
+                            <div className="mt-1.5 relative">
                                 <Listbox value={selectedRole} onChange={setSelectedRole}>
-                                    <div className="relative mt-1">
-                                        <Listbox.Button className="relative w-full cursor-default rounded-md border border-gray-300 bg-white py-2 pl-3 pr-10 text-left shadow-sm focus:border-secondary focus:outline-none focus:ring-1 focus:ring-secondary sm:text-sm">
-                                            <span className="block truncate">{selectedRole.name}</span>
-                                            <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
-                                                <ChevronDown className="h-5 w-5 text-gray-400" aria-hidden="true" />
+                                    <div className="relative">
+                                        <Listbox.Button className="relative w-full cursor-default rounded-xl border border-white/40 bg-white/70 py-3 pl-4 pr-10 text-left shadow-sm focus:border-secondary focus:outline-none focus:ring-2 focus:ring-secondary/50 sm:text-sm backdrop-blur-sm transition-all hover:bg-white/90">
+                                            <span className="block truncate font-medium text-slate-800">{selectedRole.name}</span>
+                                            <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                                                <ChevronDown className="h-5 w-5 text-slate-400" aria-hidden="true" />
                                             </span>
                                         </Listbox.Button>
                                         <Transition
@@ -82,23 +93,23 @@ export default function Login() {
                                             leaveFrom="opacity-100"
                                             leaveTo="opacity-0"
                                         >
-                                            <Listbox.Options className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
+                                            <Listbox.Options className="absolute z-20 mt-2 max-h-60 w-full overflow-auto rounded-xl bg-white/95 py-1 text-base shadow-glass-card ring-1 ring-black/5 backdrop-blur-xl focus:outline-none sm:text-sm">
                                                 {ROLES.map((role, roleIdx) => (
                                                     <Listbox.Option
                                                         key={roleIdx}
                                                         className={({ active }) =>
-                                                            `relative cursor-default select-none py-2 pl-10 pr-4 ${active ? 'bg-secondary-light/10 text-secondary-dark' : 'text-gray-900'
+                                                            `relative cursor-pointer select-none py-3 pl-10 pr-4 transition-colors ${active ? 'bg-indigo-50/80 text-secondary-dark' : 'text-slate-700'
                                                             }`
                                                         }
                                                         value={role}
                                                     >
-                                                        {({ selected }) => (
+                                                        {({ selected, active }) => (
                                                             <>
-                                                                <span className={`block truncate ${selected ? 'font-medium' : 'font-normal'}`}>
+                                                                <span className={`block truncate ${selected ? 'font-semibold text-indigo-700' : 'font-medium'}`}>
                                                                     {role.name}
                                                                 </span>
                                                                 {selected ? (
-                                                                    <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-secondary">
+                                                                    <span className={`absolute inset-y-0 left-0 flex items-center pl-3 ${active ? 'text-indigo-600' : 'text-secondary'}`}>
                                                                         <Check className="h-5 w-5" aria-hidden="true" />
                                                                     </span>
                                                                 ) : null}
@@ -114,10 +125,10 @@ export default function Login() {
                         </div>
 
                         <div>
-                            <label htmlFor="username" className="block text-sm font-medium text-gray-700">
+                            <label htmlFor="username" className="block text-sm font-semibold text-slate-700">
                                 Username
                             </label>
-                            <div className="mt-1">
+                            <div className="mt-1.5">
                                 <input
                                     id="username"
                                     name="username"
@@ -125,16 +136,17 @@ export default function Login() {
                                     required
                                     value={username}
                                     onChange={(e) => setUsername(e.target.value)}
-                                    className="block w-full appearance-none rounded-md border border-gray-300 px-3 py-2 placeholder-gray-400 shadow-sm focus:border-secondary focus:outline-none focus:ring-secondary sm:text-sm"
+                                    className="block w-full appearance-none rounded-xl border border-white/40 bg-white/70 px-4 py-3 text-slate-900 placeholder-slate-400 shadow-sm focus:border-secondary focus:bg-white focus:outline-none focus:ring-2 focus:ring-secondary/50 sm:text-sm backdrop-blur-sm transition-all hover:bg-white/90"
+                                    placeholder="Enter your username"
                                 />
                             </div>
                         </div>
 
                         <div>
-                            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                            <label htmlFor="password" className="block text-sm font-semibold text-slate-700">
                                 Password
                             </label>
-                            <div className="mt-1">
+                            <div className="mt-1.5">
                                 <input
                                     id="password"
                                     name="password"
@@ -142,31 +154,31 @@ export default function Login() {
                                     required
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    className="block w-full appearance-none rounded-md border border-gray-300 px-3 py-2 placeholder-gray-400 shadow-sm focus:border-secondary focus:outline-none focus:ring-secondary sm:text-sm"
+                                    className="block w-full appearance-none rounded-xl border border-white/40 bg-white/70 px-4 py-3 text-slate-900 placeholder-slate-400 shadow-sm focus:border-secondary focus:bg-white focus:outline-none focus:ring-2 focus:ring-secondary/50 sm:text-sm backdrop-blur-sm transition-all hover:bg-white/90"
+                                    placeholder="••••••••"
                                 />
                             </div>
                         </div>
 
                         {error && (
-                            <div className="rounded-md bg-red-50 p-4">
-                                <div className="flex">
-                                    <div className="ml-3">
-                                        <h3 className="text-sm font-medium text-red-800">{error}</h3>
-                                    </div>
+                            <div className="rounded-xl bg-red-50/90 border border-red-100 p-4 backdrop-blur-sm animate-fade-in">
+                                <div className="flex items-center">
+                                    <h3 className="text-sm font-semibold text-red-800">{error}</h3>
                                 </div>
                             </div>
                         )}
 
-                        <div>
+                        <div className="pt-2">
                             <button
                                 type="submit"
                                 disabled={isLoading}
-                                className="flex w-full justify-center rounded-md border border-transparent bg-secondary py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-secondary-dark focus:outline-none focus:ring-2 focus:ring-secondary focus:ring-offset-2 disabled:opacity-50"
+                                className="group relative flex w-full justify-center overflow-hidden rounded-xl border border-transparent bg-gradient-to-r from-indigo-600 to-purple-600 py-3 px-4 text-sm font-bold text-white shadow-btn-glow hover:from-indigo-500 hover:to-purple-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 transition-all duration-300 transform hover:-translate-y-0.5"
                             >
-                                {isLoading ? 'Signing in...' : (
-                                    <>
-                                        <Lock className="mr-2 h-4 w-4" /> Sign in
-                                    </>
+                                <span className="absolute right-0 -mt-12 h-32 w-8 translate-x-12 rotate-12 transform bg-white opacity-10 transition-all duration-1000 ease-out group-hover:-translate-x-40"></span>
+                                {isLoading ? 'Authenticating...' : (
+                                    <span className="flex items-center">
+                                        <Lock className="mr-2 h-4 w-4" /> Sign In Securely
+                                    </span>
                                 )}
                             </button>
                         </div>

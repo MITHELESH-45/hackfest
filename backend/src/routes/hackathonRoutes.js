@@ -6,7 +6,8 @@ import {
     addTimelineEvent,
     updateTimelineEvent,
     deleteTimelineEvent,
-    getStats
+    getStats,
+    restartHackathon
 } from '../controllers/hackathonController.js';
 import { authenticate } from '../middlewares/authMiddleware.js';
 import { authorize } from '../middlewares/roleMiddleware.js';
@@ -25,5 +26,8 @@ router.delete('/timeline/:id', authenticate, authorize('ADMIN'), deleteTimelineE
 
 // Stats routes
 router.get('/stats', authenticate, authorize('ADMIN'), getStats);
+
+// Restart route
+router.post('/restart', authenticate, authorize('ADMIN'), restartHackathon);
 
 export default router;

@@ -3,6 +3,8 @@ import Timeline from '../models/Timeline.js';
 import Team from '../models/Team.js';
 import User from '../models/User.js';
 import Theme from '../models/Theme.js';
+import Evaluation from '../models/Evaluation.js';
+import Complaint from '../models/Complaint.js';
 
 // @desc    Get hackathon configuration
 // @route   GET /api/hackathon/config
@@ -191,6 +193,42 @@ export const getStats = async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Server error fetching stats'
+        });
+    }
+};
+
+// @desc    Restart hackathon (Delete all data except admin)
+// @route   POST /api/hackathon/restart
+// @access  Private (Admin only)
+export const restartHackathon = async (req, res) => {
+    try {
+        await Team.deleteMany({});
+        await Theme.deleteMany({});
+        await Timeline.deleteMany({});
+        await Evaluation.deleteMany({});
+        await Complaint.deleteMany({});
+        await User.deleteMany({ role: { $in: ['JUDGE', 'PARTICIPANT'] } });
+
+        let hackathon = await Hackathon.findOne();
+        if (hackathon) {
+            hackathon.currentRound = 1;
+            hackathon.roundStatus = {
+                round1: 'LOCKED',
+                round2: 'LOCKED',
+                round3: 'LOCKED'
+            };
+            await hackathon.save();
+        }
+
+        res.json({
+            success: true,
+            message: 'Hackathon has been successfully restarted.'
+        });
+    } catch (error) {
+        console.error('Restart hackathon error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error restarting hackathon'
         });
     }
 };

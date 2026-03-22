@@ -129,7 +129,7 @@ export default function JudgeManagement() {
                 <h1 className="text-2xl font-bold text-gray-900">Judge Management</h1>
                 <button
                     onClick={() => setModalOpen(true)}
-                    className="mt-3 sm:mt-0 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-secondary hover:bg-secondary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-secondary"
+                    className="mt-3 sm:mt-0 inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-md text-sm font-medium text-white bg-slate-900 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 transition-all"
                 >
                     <Plus className="mr-2 h-4 w-4" /> Register Judge
                 </button>
