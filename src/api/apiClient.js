@@ -23,6 +23,12 @@ export const apiClient = {
      */
     handleResponse: async (response) => {
         console.log('API Response:', response.status, response.statusText);
+        if (response.status === 304) {
+            // A 304 from API should not be treated as an application error.
+            // Callers can decide to keep current in-memory data.
+            return { success: true, notModified: true };
+        }
+
         const contentType = response.headers.get('content-type');
         const isJson = contentType && contentType.includes('application/json');
         const data = isJson ? await response.json() : await response.text();
@@ -53,6 +59,7 @@ export const apiClient = {
             const response = await fetch(`${BASE_URL}${endpoint}`, {
                 method: 'GET',
                 headers: apiClient.getHeaders(),
+                cache: 'no-store'
             });
             return apiClient.handleResponse(response);
         } catch (error) {
@@ -71,6 +78,7 @@ export const apiClient = {
                 method: 'POST',
                 headers: apiClient.getHeaders(),
                 body: JSON.stringify(body),
+                cache: 'no-store'
             });
             return apiClient.handleResponse(response);
         } catch (error) {
@@ -87,6 +95,7 @@ export const apiClient = {
             method: 'PUT',
             headers: apiClient.getHeaders(),
             body: JSON.stringify(body),
+            cache: 'no-store'
         });
         return apiClient.handleResponse(response);
     },
@@ -98,6 +107,7 @@ export const apiClient = {
         const response = await fetch(`${BASE_URL}${endpoint}`, {
             method: 'DELETE',
             headers: apiClient.getHeaders(),
+            cache: 'no-store'
         });
         return apiClient.handleResponse(response);
     }

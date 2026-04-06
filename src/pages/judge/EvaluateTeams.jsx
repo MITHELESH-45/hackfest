@@ -22,7 +22,9 @@ export default function EvaluateTeams() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
 
-    const currentRound = hackathon?.currentRound ?? 1;
+    const roundStatus = hackathon?.roundStatus || {};
+    const activeRoundFromStatus = [1, 2, 3].find((round) => roundStatus?.[`round${round}`] === 'ACTIVE');
+    const currentRound = activeRoundFromStatus ?? hackathon?.currentRound ?? 1;
     const themeId = typeof user?.assignedTheme === 'object' ? user?.assignedTheme?._id : user?.assignedTheme;
     const roundKey = currentRound ? `round${currentRound}` : null;
 
@@ -54,7 +56,9 @@ export default function EvaluateTeams() {
     useEffect(() => {
         if (!hackathon) return;
         fetchTeams();
-    }, [hackathon?.currentRound, user?.id, themeId]);
+        const interval = setInterval(fetchTeams, 10000);
+        return () => clearInterval(interval);
+    }, [hackathon?.currentRound, hackathon?.roundStatus, user?._id, themeId]);
 
     const hasEvaluated = (teamId) => {
         const tid = String(teamId);
@@ -85,13 +89,12 @@ export default function EvaluateTeams() {
         try {
             await evaluationApi.submitScore({
                 teamId: selectedTeam._id,
-                judgeId: user?.username,
                 round: currentRound,
                 score: scoreVal
             });
             setIsModalOpen(false);
             await refreshContext(); // Refresh global evaluations
-            // fetchTeams(); // Not strictly needed unless list changes
+            await fetchTeams();
         } catch (err) {
             alert('Error submitting score: ' + err.message);
         } finally {
@@ -169,7 +172,7 @@ export default function EvaluateTeams() {
                                         <button
                                             type="button"
                                             onClick={() => handleEvaluateClick(team)}
-                                            className="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-secondary hover:bg-secondary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-secondary"
+                                            className="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-slate-900 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900"
                                         >
                                             Evaluate
                                         </button>

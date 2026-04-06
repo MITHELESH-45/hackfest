@@ -87,13 +87,14 @@ export default function JudgeManagement() {
 
         try {
             await judgeApi.delete(judgeToDelete._id);
+            setJudges((prev) => prev.filter((judge) => judge._id !== judgeToDelete._id));
             // Refresh
             const data = await judgeApi.getAll();
             setJudges(data);
             setDeleteConfirmOpen(false);
             setJudgeToDelete(null);
         } catch (err) {
-            alert('Failed to delete judge');
+            alert('Failed to delete judge: ' + (err.message || 'Unknown error'));
         }
     };
 

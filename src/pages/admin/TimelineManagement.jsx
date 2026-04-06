@@ -36,7 +36,7 @@ export default function TimelineManagement() {
         setLoading(true);
         try {
             if (currentSlot) {
-                await hackathonApi.updateTimelineSlot(currentSlot.id, slotData);
+                await hackathonApi.updateTimelineSlot(currentSlot._id, slotData);
             } else {
                 await hackathonApi.addTimelineSlot(slotData);
             }
@@ -112,6 +112,7 @@ export default function TimelineManagement() {
             <Table
                 columns={columns}
                 data={localTimeline}
+                keyField="_id"
                 actions={(row) => (
                     <div className="flex space-x-2 justify-end">
                         <button
@@ -121,7 +122,7 @@ export default function TimelineManagement() {
                             <Edit size={18} />
                         </button>
                         <button
-                            onClick={() => handleDelete(row.id)}
+                            onClick={() => handleDelete(row._id)}
                             className="text-red-600 hover:text-red-900 font-medium"
                         >
                             <Trash size={18} />

@@ -6,6 +6,11 @@ const timelineSchema = new mongoose.Schema({
         required: [true, 'Activity name is required'],
         trim: true
     },
+    type: {
+        type: String,
+        enum: ['GENERAL', 'DEV', 'EVALUATION', 'BREAK', 'FINAL'],
+        default: 'GENERAL'
+    },
     from: {
         type: Date,
         required: [true, 'Start time is required']

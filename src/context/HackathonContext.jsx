@@ -1,10 +1,12 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { hackathonApi } from '../api/hackathonApi';
 import { isWithinInterval } from 'date-fns';
+import { useAuth } from './AuthContext';
 
 const HackathonContext = createContext(null);
 
 export const HackathonProvider = ({ children }) => {
+    const { isAuthenticated } = useAuth();
     const [hackathon, setHackathon] = useState(null);
     const [timeline, setTimeline] = useState([]);
     const [activeSlot, setActiveSlot] = useState(null);
@@ -22,12 +24,23 @@ export const HackathonProvider = ({ children }) => {
                 setTimeline(timelineData);
             } catch (err) {
                 console.error('Failed to load hackathon data', err);
+                setHackathon(null);
+                setTimeline([]);
             } finally {
                 setLoading(false);
             }
         };
-        fetchData();
-    }, []);
+        if (isAuthenticated) {
+            setLoading(true);
+            fetchData();
+        } else {
+            // Logged out: clear private data
+            setHackathon(null);
+            setTimeline([]);
+            setActiveSlot(null);
+            setLoading(false);
+        }
+    }, [isAuthenticated]);
 
     // Timer loop for active slot detection
     useEffect(() => {

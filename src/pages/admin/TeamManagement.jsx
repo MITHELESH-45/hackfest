@@ -83,6 +83,7 @@ export default function TeamManagement() {
         if (!teamToDelete) return;
         try {
             await teamApi.delete(teamToDelete._id);
+            setTeams((prev) => prev.filter((team) => team._id !== teamToDelete._id));
             const data = await teamApi.getAll();
             setTeams(data);
             setDeleteConfirmOpen(false);

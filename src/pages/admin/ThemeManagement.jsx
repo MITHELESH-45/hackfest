@@ -37,7 +37,7 @@ export default function ThemeManagement() {
 
         try {
             if (currentTheme) {
-                await themeApi.update(currentTheme.id, themeData);
+                await themeApi.update(currentTheme._id, themeData);
             } else {
                 await themeApi.create(themeData);
             }
@@ -52,9 +52,10 @@ export default function ThemeManagement() {
         if (!window.confirm('Delete this theme?')) return;
         try {
             await themeApi.delete(id);
+            setThemes((prev) => prev.filter((theme) => theme._id !== id));
             await fetchThemes();
         } catch (err) {
-            alert('Failed to delete theme');
+            alert(err.message || 'Failed to delete theme');
         }
     };
 
@@ -66,7 +67,7 @@ export default function ThemeManagement() {
     const columns = [
         { key: 'name', header: 'Theme Name' },
         { key: 'maxTeams', header: 'Max Teams' },
-        { key: 'assignedCount', header: 'Assigned Teams', render: (row) => row.assignedCount || 0 }
+        { key: 'teamCount', header: 'Assigned Teams', render: (row) => row.teamCount ?? 0 }
     ];
 
     if (loading && themes.length === 0) return <LoadingSpinner />;
@@ -86,12 +87,13 @@ export default function ThemeManagement() {
             <Table
                 columns={columns}
                 data={themes}
+                keyField="_id"
                 actions={(row) => (
                     <div className="flex space-x-2 justify-end">
                         <button onClick={() => openModal(row)} className="text-secondary hover:text-secondary-dark">
                             <Edit size={18} />
                         </button>
-                        <button onClick={() => handleDelete(row.id)} className="text-red-600 hover:text-red-900">
+                        <button onClick={() => handleDelete(row._id)} className="text-red-600 hover:text-red-900">
                             <Trash size={18} />
                         </button>
                     </div>
